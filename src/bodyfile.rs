@@ -5,7 +5,9 @@
 */
 
 use std::fs::File;
+use std::io;
 use std::io::{prelude::*, BufReader, Lines, ErrorKind};
+use itertools::Itertools;
 
 
 pub struct BodyfileReader<'a> {
@@ -26,7 +28,7 @@ impl<'a> BodyfileReader<'a> {
 }
 
 impl<'a> Iterator for BodyfileReader<'a> {
-    type Item = std::io::Result<String>;
+    type Item = io::Result<String>;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -41,28 +43,31 @@ impl<'a> Iterator for BodyfileReader<'a> {
                 },
 
                 Ok(line) => {
-                    let attribute_type = line
-                        .split("|")
-                        .nth(2)
-                        .and_then(|metadata_address| {
-                            metadata_address.split("-").nth(1)
-                        });
+                    return match line.split("|").next_tuple() {
+                        Some((_, filename, metadata_address)) => {
+                            let attribute_type = metadata_address.split("-").nth(1);
 
-                    if attribute_type != Some("144") {
-                        continue;
-                    }
+                            if attribute_type != Some("144") {
+                                continue;
+                            }
 
-                    let res = line
-                        .split("|")
-                        .nth(1)
+                            let res = strip_mount_point(self.mount_point, filename)
+                                .and_then(|res| strip_deleted(res));
 
-                        .and_then(|res| strip_mount_point(self.mount_point, res))
-                        .and_then(|res| strip_deleted(res));
+                            Some(
+                                match res {
+                                    Some(res) =>
+                                        Ok(res.replace("/", "\\").to_uppercase()),
 
-                    if let Some(res) = res {
-                        return Some(
-                            Ok(res.replace("/", "\\").to_uppercase())
-                        );
+                                    None =>
+                                        Err(invalid_data("could not strip mount point"))
+                                }
+                            )
+                        }
+
+                        None => Some(
+                            Err(invalid_data("invalid format"))
+                        )
                     }
                 }
             }
@@ -83,4 +88,11 @@ fn strip_mount_point<'a>(mount_point: &str, path: &'a str) -> Option<&'a str> {
 
 fn strip_deleted(path: &str) -> Option<&str> {
     path.strip_suffix(" (deleted)").or(Some(path))
+}
+
+fn invalid_data(message: &str) -> io::Error {
+    io::Error::new(
+        ErrorKind::InvalidData,
+        message
+    )
 }

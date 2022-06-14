@@ -37,17 +37,10 @@ impl PfHashFunction {
 
 
 mod hash {
-    use std::iter::{Flatten, Map};
-    use std::str::EncodeUtf16;
-
-    fn encode_char_utf16_le(char: u16) -> [u8; 2] {
-        char.to_le_bytes()
-    }
-
-    fn encode_utf16_bytes(filename: &str) -> Flatten<Map<EncodeUtf16<'_>, fn(u16) -> [u8; 2]>> {
+    fn encode_utf16_bytes(filename: &str) -> impl Iterator<Item=u8> + '_ {
         filename
             .encode_utf16()
-            .map(encode_char_utf16_le as fn(u16) -> [u8; 2])
+            .map(|char| char.to_le_bytes())
             .flatten()
     }
 
@@ -84,27 +77,34 @@ pub fn from_base16(hash: &str) -> Result<u32, ParseIntError> {
     u32::from_str_radix(hash, 16)
 }
 
-pub struct DevicePaths {
+pub struct DevicePaths<'a> {
+    folder: &'a str,
+    executable: &'a str,
+
     id: i32
 }
 
-impl DevicePaths {
-    pub fn new() -> Self {
+impl<'a> DevicePaths<'a> {
+    pub fn new(folder: &'a str, executable: &'a str) -> Self {
         Self {
+            folder,
+            executable,
+
             id: 0
         }
     }
 }
 
-impl Iterator for DevicePaths {
+impl<'a> Iterator for DevicePaths<'a> {
     type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.id {
             0..=9 => {
-                let res = format!("\\DEVICE\\HARDDISKVOLUME{}", self.id);
-                self.id += 1;
+                let (id, folder, executable) = (self.id, self.folder, self.executable);
+                let res = format!("\\DEVICE\\HARDDISKVOLUME{id}\\{folder}\\{executable}");
 
+                self.id += 1;
                 Some(res)
             }
 

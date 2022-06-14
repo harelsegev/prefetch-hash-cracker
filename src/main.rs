@@ -8,8 +8,9 @@
 
 mod prefetch;
 mod bodyfile;
+mod errors;
 
-type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+type Result<T> = std::result::Result<T, PrefetchHashCrackerError>;
 
 use std::fs::File;
 use std::path::PathBuf;
@@ -20,6 +21,7 @@ use eframe::egui::{Context, TextEdit, Vec2, Visuals, ComboBox};
 use eframe::epi::{Frame, Storage};
 
 use prefetch::{PfHashFunction, DevicePaths, from_base16};
+use errors::PrefetchHashCrackerError;
 use bodyfile::BodyfileReader;
 
 
@@ -135,12 +137,8 @@ impl PrefetchHashCracker {
             ui.vertical_centered(|ui| {
                 if ui.button("Crack").clicked() {
                     self.result = self.crack()
-                        .unwrap_or_else(|error|
-                            Some(
-                                format!("Error: {}", error.to_string())
-                            )
-                        )
-                        .unwrap_or("Brute-force failed".to_owned());
+                        .unwrap_or_else(|error| Some(error.to_string()))
+                        .unwrap_or("failed to crack the prefetch hash".to_owned());
                 }
 
                 ui.add_space(5.0);
@@ -163,9 +161,7 @@ impl PrefetchHashCracker {
         for folder in reader {
             let folder = folder?;
 
-            for device in DevicePaths::new() {
-                let guess = format!("{device}\\{folder}\\{}", &self.executable);
-
+            for guess in DevicePaths::new(&folder, &self.executable) {
                 if hash_function.hash(&guess) == hash {
                     return Ok(Some(guess));
                 }
