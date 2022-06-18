@@ -31,7 +31,7 @@ A bodyfile of the system.
 The bodyfile format is not very restrictive, so there are a lot of variations of it - some of which are not supported. Body files created with `fls` and `MFTECmd` should work fine.
 
 ### Mount point
-The mount point of the bodyfile, as marked below:
+The mount point of the bodyfile, as underlined below:
 
 <pre><code>0|<ins>C:</ins>/Users/Peter/Desktop ($FILE_NAME)|62694-48-2|d/d-wx-wx-wx|...</code></pre>
 
