@@ -60,13 +60,23 @@ impl<'a> Iterator for BodyfileReader<'a> {
                                         Ok(res.replace("/", "\\").to_uppercase()),
 
                                     None =>
-                                        Err(invalid_data("could not strip mount point"))
+                                        Err(
+                                            io::Error::new(
+                                                ErrorKind::InvalidData,
+                                                "could not strip mount point"
+                                            )
+                                        )
                                 }
                             )
                         }
 
                         None => Some(
-                            Err(invalid_data("invalid format"))
+                            Err(
+                                io::Error::new(
+                                    ErrorKind::InvalidData,
+                                    "invalid format"
+                                )
+                            )
                         )
                     }
                 }
@@ -88,11 +98,4 @@ fn strip_mount_point<'a>(mount_point: &str, path: &'a str) -> Option<&'a str> {
 
 fn strip_deleted(path: &str) -> Option<&str> {
     path.strip_suffix(" (deleted)").or(Some(path))
-}
-
-fn invalid_data(message: &str) -> io::Error {
-    io::Error::new(
-        ErrorKind::InvalidData,
-        message
-    )
 }

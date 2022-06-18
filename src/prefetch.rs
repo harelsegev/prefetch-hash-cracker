@@ -6,6 +6,7 @@
 
 use std::num::ParseIntError;
 
+
 pub struct PfHashFunction {
     name: &'static str,
     function: fn(&str) -> u32
@@ -45,14 +46,14 @@ mod hash {
     }
 
     pub fn scca_vista(filename: &str) -> u32 {
-        let mut hash_value: u32 = 314159;
+        let mut hash_value: i32 = 314159;
         for byte in encode_utf16_bytes(filename) {
             hash_value = hash_value
                 .wrapping_mul(37)
-                .wrapping_add(byte as u32);
+                .wrapping_add(byte as i32);
         }
 
-        hash_value
+        hash_value as u32
     }
 
     pub fn scca_xp(filename: &str) -> u32 {

@@ -9,6 +9,7 @@ use std::fmt;
 use std::num;
 use std::error;
 
+
 #[derive(Debug)]
 pub enum PrefetchHashCrackerError {
     BadHash(num::ParseIntError),
