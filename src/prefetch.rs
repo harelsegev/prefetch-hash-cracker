@@ -26,6 +26,13 @@ impl PfHashFunction {
             function: hash::scca_xp
         }
     }
+	
+	pub fn scca_2008() -> Self {
+		Self {
+			name: "SCCA 2008",
+			function: hash::scca_2008
+		}
+	}
 
     pub fn hash(&self, filename: &str) -> u32 {
         (self.function)(filename)
@@ -46,32 +53,70 @@ mod hash {
     }
 
     pub fn scca_vista(filename: &str) -> u32 {
-        let mut hash_value: i32 = 314159;
+        let mut hash_value: u32 = 314159;
         for byte in encode_utf16_bytes(filename) {
             hash_value = hash_value
                 .wrapping_mul(37)
-                .wrapping_add(byte as i32);
+                .wrapping_add(byte as u32);
         }
 
-        hash_value as u32
+        hash_value
     }
 
     pub fn scca_xp(filename: &str) -> u32 {
-        let mut hash_value: i32 = 0;
+        let mut hash_value: u32 = 0;
         for byte in encode_utf16_bytes(filename) {
             hash_value = hash_value
                 .wrapping_mul(37)
-                .wrapping_add(byte as i32);
+                .wrapping_add(byte as u32);
         }
 
         hash_value = hash_value.wrapping_mul(314159269);
 
-        if hash_value < 0 {
+        if (hash_value as i32) < 0 {
             hash_value = hash_value.wrapping_neg();
         }
 
-        (hash_value as u32) % 1000000007
+        hash_value % 1000000007
     }
+	
+	pub fn scca_2008(filename: &str) -> u32 {
+		let mut hash_value: u32 = 314159;
+		
+		let filename: Vec<_> = encode_utf16_bytes(filename).collect();
+		let mut index: usize = 0;
+		
+		while index + 8 < filename.len() {			
+			let mut character_value: u32 = 0;
+			
+			for n in 1..=6 {
+				character_value = character_value.wrapping_add(filename[index + n] as u32);
+				character_value = character_value.wrapping_mul(37);
+			}
+			
+			character_value = character_value.wrapping_add(
+				(filename[index] as u32).wrapping_mul(442596621)
+			);
+			
+			character_value = character_value.wrapping_add(filename[index + 7] as u32);
+			
+			hash_value = character_value.wrapping_sub(
+				hash_value.wrapping_mul(803794207)
+			);
+			
+			index += 8;
+		}
+		
+		while index < filename.len() {
+			hash_value = hash_value
+				.wrapping_mul(37)
+				.wrapping_add(filename[index] as u32);
+			
+			index += 1;
+		}
+		
+		hash_value
+	}
 }
 
 pub fn from_base16(hash: &str) -> Result<u32, ParseIntError> {

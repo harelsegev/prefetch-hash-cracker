@@ -49,6 +49,7 @@ impl PrefetchHashCracker {
 
             hash_functions: vec![
                 PfHashFunction::scca_vista(),
+				PfHashFunction::scca_2008(),
                 PfHashFunction::scca_xp()
             ],
 
